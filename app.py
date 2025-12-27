@@ -1,6 +1,15 @@
 from flask import Flask, render_template, request
 import joblib
-import os 
+import os
+
+app = Flask(__name__)
+
+# Load AI model
+model = joblib.load("model.pkl")
+vectorizer = joblib.load("vectorizer.pkl")
+
+
+# 🔐 Rule-based scam check
 def rule_based_check(text):
     red_flags = [
         "₹", "rs", "inr", "send money", "pay",
@@ -14,28 +23,26 @@ def rule_based_check(text):
             count += 1
 
     return count >= 2
-app = Flask(__name__)
-# Load AI model
-model = joblib.load("model.pkl")
-vectorizer = joblib.load("vectorizer.pkl")
 
+
+# 🤖 ML + Rule-based prediction
 def predict_message(text):
     text_vec = vectorizer.transform([text])
     prediction = model.predict(text_vec)[0]
 
-    if prediction == "scam":
-        return "SCAM", "This message looks like a scam based on learned patterns."
+    # Rule-based override
+    if rule_based_check(text):
+        return "⚠️ SCAM (High Risk – Money Fraud)", "Money request + urgency detected."
+
+    elif prediction == "scam":
+        return "⚠️ SCAM", "This message matches known scam patterns."
+
     else:
-        return "SAFE", "This message appears safe, but always stay cautious."
+        return "✅ SAFE", "This message appears safe, but always stay cautious."
 
+
+# 🌐 Home route
 @app.route("/", methods=["GET", "POST"])
-if rule_based_check(user_text):
-    result = "⚠️ SCAM (High Risk – Money Fraud)"
-elif prediction == "scam":
-    result = "⚠️ SCAM"
-else:
-    result = "✅ SAFE"
-
 def home():
     result = ""
     reason = ""
@@ -46,8 +53,16 @@ def home():
 
     return render_template("index.html", result=result, reason=reason)
 
+
+# ▶️ Run app
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    app.run(
+        debug=True,
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8000))
+    )
+
+
 
 
 
