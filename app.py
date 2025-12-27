@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 import joblib
-
+import os 
 app = Flask(__name__)
 
 # Load AI model
@@ -28,5 +28,7 @@ def home():
     return render_template("index.html", result=result, reason=reason)
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8000)
+    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+
+
 
