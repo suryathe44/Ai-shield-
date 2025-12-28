@@ -40,7 +40,7 @@ def home():
         ai_result = ai_predict(text)
         risk = calculate_risk(ai_result, reasons)
 
-        if risk >= 70:
+        if risk >= 40:
             result = "⚠️ SCAM"
         else:
             result = "✅ SAFE"
@@ -58,3 +58,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8000))
     )
+
