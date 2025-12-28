@@ -2,65 +2,46 @@ from flask import Flask, render_template, request
 import joblib
 import os
 
+from utils.rules import rule_based_check
+from utils.risk_score import calculate_risk
+from utils.language import detect_language
+from services.predictor import predict_ai
+
 app = Flask(__name__)
 
-# Load AI model
-model = joblib.load("model.pkl")
-vectorizer = joblib.load("vectorizer.pkl")
+model = joblib.load("model/scam_model.pkl")
+vectorizer = joblib.load("model/vectorizer.pkl")
 
-
-# 🔐 Rule-based scam check
-def rule_based_check(text):
-    red_flags = [
-        "₹", "rs", "inr", "send money", "pay",
-        "urgent", "account block", "bank details",
-        "processing fee", "transfer money"
-    ]
-
-    count = 0
-    for flag in red_flags:
-        if flag in text.lower():
-            count += 1
-
-    return count >= 2
-
-
-# 🤖 ML + Rule-based prediction
-def predict_message(text):
-    text_vec = vectorizer.transform([text])
-    prediction = model.predict(text_vec)[0]
-
-    # Rule-based override
-    if rule_based_check(text):
-        return "⚠️ SCAM (High Risk – Money Fraud)", "Money request + urgency detected."
-
-    elif prediction == "scam":
-        return "⚠️ SCAM", "This message matches known scam patterns."
-
-    else:
-        return "✅ SAFE", "This message appears safe, but always stay cautious."
-
-
-# 🌐 Home route
 @app.route("/", methods=["GET", "POST"])
 def home():
     result = ""
-    reason = ""
+    reasons = []
+    risk = 0
 
     if request.method == "POST":
-        user_text = request.form["message"]
-        result, reason = predict_message(user_text)
+        text = request.form["message"]
+        lang = detect_language(text)
 
-    return render_template("index.html", result=result, reason=reason)
+        ai_result = predict_ai(text, model, vectorizer)
+        rule_flags = rule_based_check(text)
+        risk = calculate_risk(ai_result, rule_flags)
 
+        if risk >= 70:
+            result = "⚠️ SCAM"
+        else:
+            result = "✅ SAFE"
 
-# ▶️ Run app
+        reasons = rule_flags
+
+    return render_template("index.html",
+                           result=result,
+                           risk=risk,
+                           reasons=reasons)
+
 if __name__ == "__main__":
-    app.run(
-        debug=True,
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8000))
-    )
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+
+
 
 
 
