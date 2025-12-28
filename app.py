@@ -7,26 +7,26 @@ from utils.risk_score import calculate_risk
 
 app = Flask(__name__)
 
-# ---------- SAFE MODEL LOADING ----------
+# ---------------- LOAD MODEL SAFELY ----------------
 model = None
 vectorizer = None
 
 try:
     model = joblib.load("model/scam_model.pkl")
     vectorizer = joblib.load("model/vectorizer.pkl")
-    print("✅ Model loaded successfully")
+    print("✅ ML model loaded")
 except Exception as e:
-    print("⚠️ Model load failed, running in rule-based mode only")
+    print("⚠️ ML model not loaded, rule-based mode only")
     print(e)
 
-# ---------- AI PREDICTION ----------
+# ---------------- AI PREDICTION ----------------
 def ai_predict(text):
     if model is None or vectorizer is None:
         return "unknown"
-    vec = vectorizer.transform([text])
-    return model.predict(vec)[0]
+    text_vec = vectorizer.transform([text])
+    return model.predict(text_vec)[0]
 
-# ---------- ROUTE ----------
+# ---------------- ROUTE ----------------
 @app.route("/", methods=["GET", "POST"])
 def home():
     result = ""
@@ -34,20 +34,24 @@ def home():
     reasons = []
 
     if request.method == "POST":
-        text = request.form["message"]
+        text = request.form.get("message", "")
 
+        # Rule-based detection
         reasons = rule_based_check(text)
-        ai_result = ai_predict(text)
-        risk = calculate_risk(ai_result, reasons)
-# FINAL DECISION LOGIC
-if "money" in reasons and "urgency" in reasons:
-    result = "⚠️ SCAM"
-elif risk >= 60:
-    result = "⚠️ SCAM"
-else:
-    result = "✅ SAFE"
 
-         
+        # AI prediction
+        ai_result = ai_predict(text)
+
+        # Risk calculation
+        risk = calculate_risk(ai_result, reasons)
+
+        # FINAL STRICT DECISION LOGIC
+        if "money" in reasons and "urgency" in reasons:
+            result = "⚠️ SCAM"
+        elif risk >= 60:
+            result = "⚠️ SCAM"
+        else:
+            result = "✅ SAFE"
 
     return render_template(
         "index.html",
@@ -56,11 +60,10 @@ else:
         reasons=reasons
     )
 
-# ---------- RUN ----------
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", 8000))
+        port=int(os.environ.get("PORT", 8000)),
+        debug=False
     )
-
-
