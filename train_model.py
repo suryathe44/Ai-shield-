@@ -1,30 +1,24 @@
 import pandas as pd
+import joblib
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-import joblib
 
-# Load dataset
+# Load data
 data = pd.read_csv("dataset.csv")
 
 X = data["text"]
 y = data["label"]
 
 # Vectorizer
-vectorizer = TfidfVectorizer(
-    ngram_range=(1,2),
-    stop_words="english",
-    max_features=5000
-)
-
+vectorizer = TfidfVectorizer()
 X_vec = vectorizer.fit_transform(X)
 
 # Model
 model = LogisticRegression()
 model.fit(X_vec, y)
 
-# Save model
-joblib.dump(model, "model.pkl")
-joblib.dump(vectorizer, "vectorizer.pkl")
+# Save
+joblib.dump(model, "model/scam_model.pkl")
+joblib.dump(vectorizer, "model/vectorizer.pkl")
 
-print("✅ Model trained and saved successfully")
-
+print("✅ Model & vectorizer saved successfully")
