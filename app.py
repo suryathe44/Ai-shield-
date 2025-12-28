@@ -39,11 +39,15 @@ def home():
         reasons = rule_based_check(text)
         ai_result = ai_predict(text)
         risk = calculate_risk(ai_result, reasons)
+# FINAL DECISION LOGIC
+if "money" in reasons and "urgency" in reasons:
+    result = "⚠️ SCAM"
+elif risk >= 60:
+    result = "⚠️ SCAM"
+else:
+    result = "✅ SAFE"
 
-        if risk >= 40:
-            result = "⚠️ SCAM"
-        else:
-            result = "✅ SAFE"
+         
 
     return render_template(
         "index.html",
@@ -58,4 +62,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=int(os.environ.get("PORT", 8000))
     )
+
 
