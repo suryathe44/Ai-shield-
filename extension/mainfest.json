@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "AI Shield",
+  "version": "1.0",
+  "description": "Detect online scams instantly",
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
